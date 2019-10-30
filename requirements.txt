@@ -10,3 +10,5 @@ psycopg2
 requests
 csh_ldap
 pylint
+ffmpy
+librosa

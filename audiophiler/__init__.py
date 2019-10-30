@@ -8,6 +8,8 @@ import subprocess
 import json
 import requests
 import flask_migrate
+from ffmpy import FFmpeg
+import librosa
 from flask import Flask, render_template, request, jsonify, redirect
 from flask_pyoidc.provider_configuration import *
 from flask_pyoidc.flask_pyoidc import OIDCAuthentication
@@ -160,9 +162,33 @@ def upload(auth_dict=None):
             upload_status["error"].append(filename)
             break
 
-        # Upload file to s3
-        upload_file(s3_bucket, file_hash, f)
+        #Convert file to wav
+        ff = FFmpeg(
+            inputs={filename: '-ss 0 -t 30'}
+            outputs={'harold.wav': None}
+        )
+        ff.cmd
+        ff.run()
 
+        #Process audio
+        beat_time_string = beat_process_audio('harold.wav')
+
+        #Convert to mp3
+        ff = FFmpeg(
+            inputs={'harold.wav': '-ss 0 -t 30'}
+            outputs={'harold.mp3': None}
+        )
+        ff.cmd
+        ff.run()
+
+        #Add stuff to metadata
+        
+        # Upload file to s3
+        upload_file(s3_bucket, file_hash, open('harold.mp3', 'r'))
+
+        #remove local files
+        os.remove('harold.wav')
+        os.remove('harold.mp3')
         # Add file_model to DB and flush
         db.session.add(file_model)
         db.session.flush()
@@ -315,3 +341,21 @@ def get_random_harold():
     randomized_entry = query.offset(int(row_count*random.random())).first()
 
     return randomized_entry.file_hash
+
+def process_audio(file):
+    x, sr = librosa.load(file)
+    tempo, beat_times = librosa.beat_track(x, sr=sr, start_bpm=60, units='time')
+    string = ""
+    for t in beat_times:
+        if t > 30:
+            beat_times = beat_times[:beat_times.index(t)]
+            break
+    for i in range(0, len(beat_times)-1, 4):
+        beat_times.insert(i+1, (3*beat_times[i]+beat_times[i+1])/4)
+        beat_times.insert(i+2, (beat_times[i]+beat_times[i+2])/2)
+        beat_times.insert(i+3, (beat_times[i]+3*beat_times[i+3])/4)
+
+    for t in beat_times:
+        string = string+str(t)+","
+
+    return string[:-1]

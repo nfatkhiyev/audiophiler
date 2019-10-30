@@ -32,6 +32,7 @@ def upload_file(bucket, file_hash, f):
 
 def remove_file(bucket, file_hash):
     # Does anybody read these comments
+    # I don't know does anybody?
     bucket.delete_key(file_hash)
 
 def get_bucket(s3_url, s3_key, s3_secret, bucket_name):
