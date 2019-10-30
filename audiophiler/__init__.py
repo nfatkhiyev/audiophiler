@@ -16,7 +16,7 @@ from flask_pyoidc.flask_pyoidc import OIDCAuthentication
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from csh_ldap import CSHLDAP
-from mutagen.mp3 import MP3
+from mutagen.flac import FLAC
 from audiophiler.s3 import *
 
 app = Flask(__name__)
@@ -170,20 +170,22 @@ def upload(auth_dict=None):
         ff.run()
 
         #Process audio
-        beat_time_string = beat_process_audio('harold.wav')
+        beat_time_string = process_audio('harold.wav')
 
         #Convert to mp3
         ff = FFmpeg(
             inputs={'harold.wav': '-ss 0 -t 30'},
-            outputs={'harold.mp3': None}
+            outputs={'harold.flac': None}
         )
         ff.run()
 
         #Add stuff to metadata
-        file = MP3('harold.mp3')
+        file = FLAC('harold.flac')
         file["title"] = filename.partition(".")[0]
         file["artist"] = auth_dict["uid"]
-        
+        file["beats"] = beat_time_string
+        file.save()
+
         # Upload file to s3
         upload_file(s3_bucket, file_hash, open('harold.mp3', 'r'))
 
@@ -345,7 +347,7 @@ def get_random_harold():
 
 def process_audio(file):
     x, sr = librosa.load(file)
-    tempo, beat_times = librosa.beat_track(x, sr=sr, start_bpm=60, units='time')
+    _, beat_times = librosa.beat_track(x, sr=sr, start_bpm=60, units='time')
     string = ""
     for t in beat_times:
         if t > 30:
