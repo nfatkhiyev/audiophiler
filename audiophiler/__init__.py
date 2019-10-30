@@ -16,7 +16,7 @@ from flask_pyoidc.flask_pyoidc import OIDCAuthentication
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from csh_ldap import CSHLDAP
-
+from mutagen.mp3 import MP3
 from audiophiler.s3 import *
 
 app = Flask(__name__)
@@ -164,10 +164,9 @@ def upload(auth_dict=None):
 
         #Convert file to wav
         ff = FFmpeg(
-            inputs={filename: '-ss 0 -t 30'}
+            inputs={filename: '-ss 0 -t 30'},
             outputs={'harold.wav': None}
         )
-        ff.cmd
         ff.run()
 
         #Process audio
@@ -175,13 +174,15 @@ def upload(auth_dict=None):
 
         #Convert to mp3
         ff = FFmpeg(
-            inputs={'harold.wav': '-ss 0 -t 30'}
+            inputs={'harold.wav': '-ss 0 -t 30'},
             outputs={'harold.mp3': None}
         )
-        ff.cmd
         ff.run()
 
         #Add stuff to metadata
+        file = MP3('harold.mp3')
+        file["title"] = filename.partition(".")[0]
+        file["artist"] = auth_dict["uid"]
         
         # Upload file to s3
         upload_file(s3_bucket, file_hash, open('harold.mp3', 'r'))

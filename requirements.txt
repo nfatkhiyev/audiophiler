@@ -12,3 +12,4 @@ csh_ldap
 pylint
 ffmpy
 librosa
+mutagen
