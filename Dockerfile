@@ -2,7 +2,7 @@ FROM python:3.7.2
 MAINTAINER Computer Science House <rtp@csh.rit.edu>
 
 RUN apt-get update && \
-    apt-get install -y libsndfile && \
+    apt-get install -y libsndfile1 && \
     apt-get autoremove --yes && \
     apt-get clean autoclean && \
     rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
