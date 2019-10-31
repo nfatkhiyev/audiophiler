@@ -187,11 +187,11 @@ def upload(auth_dict=None):
         file.save()
 
         # Upload file to s3
-        upload_file(s3_bucket, file_hash, open('harold.mp3', 'r'))
+        upload_file(s3_bucket, file_hash, open('harold.flac', 'r'))
 
         #remove local files
         os.remove('harold.wav')
-        os.remove('harold.mp3')
+        os.remove('harold.flac')
         # Add file_model to DB and flush
         db.session.add(file_model)
         db.session.flush()
