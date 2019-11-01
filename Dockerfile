@@ -2,7 +2,7 @@ FROM python:3.7.2
 MAINTAINER Computer Science House <rtp@csh.rit.edu>
 
 RUN apt-get update && \
-    apt-get install -y libsndfile-dev libldap-dev libsasl2-dev && \
+    apt-get install -y libsndfile-dev libldap-dev libsasl2-dev python3-virtualenv && \
     apt-get autoremove --yes && \
     apt-get clean autoclean && \
     rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
@@ -11,7 +11,9 @@ RUN apt-get update && \
 WORKDIR /opt/audiophiler-dev-nate
 ADD . /opt/audiophiler-dev-nate
 
-RUN pip install \
+RUN python3 -m virtualenv --python=/usr/bin/python3 /opt/venv
+
+RUN . /opt/venv/bin/activate && pip install \
         --no-warn-script-location \
         --no-cache-dir \
         -r requirements.txt
@@ -23,7 +25,7 @@ RUN groupadd -r audiophiler-dev-nate && \
 
 USER audiophiler-dev-nate
 
-CMD gunicorn "wsgi:app" \
+CMD . /opt/venv/bin/activate && exec gunicorn "wsgi:app" \
     --workers 4 \
     --timeout 600 \
     --capture-output \
