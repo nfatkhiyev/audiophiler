@@ -1,38 +1,20 @@
-FROM python:3
+FROM python:3.7-slim-buster
 MAINTAINER Computer Science House <rtp@csh.rit.edu>
 
 RUN apt-get update && \
-    apt-get install -y libsndfile-dev libldap-dev libsasl2-dev python3-dev && \
+    apt-get install -y --no-install-recommends gcc libsndfile-dev libldap-dev libsasl2-dev python3-dev libpq-dev && \
     apt-get autoremove --yes && \
-    apt-get clean autoclean && \
+    apt-get clean all && \
     rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
-    mkdir -p /opt/audiophiler-dev-nate /var/lib/audiophiler-dev-nate
+    mkdir -p /opt/audiophiler /var/lib/audiophiler
 
-WORKDIR /opt/audiophiler-dev-nate
-ADD . /opt/audiophiler-dev-nate
+WORKDIR /opt/audiophiler
 
-RUN pip install virtualenv
+ADD . /opt/audiophiler
 
-RUN python3 -m virtualenv --python=/usr/bin/python3 /opt/venv
-
-RUN . /opt/venv/bin/activate && pip install \
+RUN pip install \
         --no-warn-script-location \
+        --no-cache-dir \
         -r requirements.txt
 
-RUN groupadd -r audiophiler-dev-nate && \
-    useradd -l -r -u 1001 -d /var/lib/audiophiler-dev-nate -g audiophiler-dev-nate audiophiler-dev-nate && \
-    chown -R audiophiler-dev-nate:audiophiler-dev-nate /opt/audiophiler-dev-nate /var/lib/audiophiler-dev-nate && \
-    chmod -R og+rwx /var/lib/audiophiler-dev-nate
-
-USER audiophiler-dev-nate
-
-ENV NUMBA_CACHE_DIR /tmp
-
-ENV LIBROSA_CACHE_DIR /tmp
-
-CMD . /opt/venv/bin/activate && exec gunicorn "wsgi:app" \
-    --workers 4 \
-    --timeout 600 \
-    --capture-output \
-    --bind=0.0.0.0:8080 \
-    --access-logfile=-
+CMD ["gunicorn", "audiophiler:app", "--bind=0.0.0.0:8080", "--access-logfile=-", "--timeout=600"]
