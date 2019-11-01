@@ -1,4 +1,4 @@
-FROM ubuntu:18.0.4
+FROM ubuntu:18.04
 MAINTAINER Computer Science House <rtp@csh.rit.edu>
 
 RUN apt-get update && \
