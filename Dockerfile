@@ -1,6 +1,8 @@
 FROM python:3
 MAINTAINER Computer Science House <rtp@csh.rit.edu>
 
+ENV NUMBA_CACHE_DIR /tmp
+
 RUN apt-get update && \
     apt-get install -y libsndfile-dev libldap-dev libsasl2-dev python3-dev && \
     apt-get autoremove --yes && \
