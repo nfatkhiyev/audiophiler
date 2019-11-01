@@ -2,7 +2,7 @@ FROM python:3.7-slim-buster
 MAINTAINER Computer Science House <rtp@csh.rit.edu>
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends gcc libsndfile-dev libldap-dev libsasl2-dev python3-dev libpq-dev && \
+    apt-get install -y --no-install-recommends apt-utils gcc git libsndfile-dev libldap-dev libsasl2-dev python3-dev libpq-dev && \
     apt-get autoremove --yes && \
     apt-get clean all && \
     rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
@@ -10,7 +10,7 @@ RUN apt-get update && \
 
 WORKDIR /opt/audiophiler
 
-ADD . /opt/audiophiler
+COPY . /opt/audiophiler
 
 RUN pip install \
         --no-warn-script-location \
