@@ -17,7 +17,6 @@ RUN python3 -m virtualenv --python=/usr/bin/python3 /opt/venv
 
 RUN . /opt/venv/bin/activate && pip install \
         --no-warn-script-location \
-        --no-cache-dir \
         -r requirements.txt
 
 RUN groupadd -r audiophiler-dev-nate && \
