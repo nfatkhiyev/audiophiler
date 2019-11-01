@@ -11,5 +11,5 @@ requests
 csh_ldap
 pylint
 ffmpy
-librosa
+librosa-dev
 mutagen
