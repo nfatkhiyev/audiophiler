@@ -28,6 +28,8 @@ USER audiophiler-dev-nate
 
 ENV NUMBA_CACHE_DIR /tmp
 
+ENV LIBROSA_CACHE_DIR /tmp
+
 CMD . /opt/venv/bin/activate && exec gunicorn "wsgi:app" \
     --workers 4 \
     --timeout 600 \
