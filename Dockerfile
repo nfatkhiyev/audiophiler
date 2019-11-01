@@ -2,7 +2,7 @@ FROM python:3.7.2
 MAINTAINER Computer Science House <rtp@csh.rit.edu>
 
 RUN apt-get update && \
-    apt-get install -y libsndfile-dev libldap-dev libsasl2-dev python3 python3-virtualenv && \
+    apt-get install -y libsndfile-dev libldap-dev libsasl2-dev && \
     apt-get autoremove --yes && \
     apt-get clean autoclean && \
     rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
@@ -10,6 +10,8 @@ RUN apt-get update && \
 
 WORKDIR /opt/audiophiler-dev-nate
 ADD . /opt/audiophiler-dev-nate
+
+RUN pip install virtualenv
 
 RUN python3 -m virtualenv --python=/usr/bin/python3 /opt/venv
 
