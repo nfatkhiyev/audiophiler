@@ -1,4 +1,4 @@
-FROM python:3.5
+FROM python:3
 MAINTAINER Computer Science House <rtp@csh.rit.edu>
 
 RUN apt-get update && \
