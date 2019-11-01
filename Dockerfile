@@ -1,4 +1,4 @@
-FROM python:3.7-slim-buster
+FROM ubuntu:18.0.4
 MAINTAINER Computer Science House <rtp@csh.rit.edu>
 
 RUN apt-get update && \
