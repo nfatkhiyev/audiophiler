@@ -18,18 +18,19 @@ from werkzeug.utils import secure_filename
 from csh_ldap import CSHLDAP
 from mutagen.flac import FLAC
 from audiophiler.s3 import *
+from audiophiler._version import __version__
 
 app = Flask(__name__)
-app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config.update({
+    "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+    "VERSION": __version__
+})
 
 # Get app config from absolute file path
 if os.path.exists(os.path.join(os.getcwd(), "config.py")):
     app.config.from_pyfile(os.path.join(os.getcwd(), "config.py"))
 else:
     app.config.from_pyfile(os.path.join(os.getcwd(), "config.env.py"))
-
-git_cmd = ['git', 'rev-parse', '--short', 'HEAD']
-app.config["GIT_REVISION"] = subprocess.check_output(git_cmd).decode('utf-8').rstrip()
 
 _config = ProviderConfiguration(
     app.config['OIDC_ISSUER'],
