@@ -12,6 +12,8 @@ WORKDIR /opt/audiophiler
 
 COPY . /opt/audiophiler
 
+RUN ls -A /opt/audiophiler
+
 RUN mkdir /tmp/numba_cache & chmod 777 /tmp/numba_cache & NUMBA_CACHE_DIR=/tmp/numba_cache
 RUN mkdir /tmp/librosa_cache & chmod 777 /tmp/librosa_cache & LIBROSA_CACHE_DIR=/tmp/librosa_cache
 
