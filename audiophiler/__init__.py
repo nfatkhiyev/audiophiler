@@ -165,7 +165,7 @@ def upload(auth_dict=None):
 
         #Convert file to wav
         ff = FFmpeg(
-            inputs={filename: '-ss 0 -t 30'},
+            inputs={filename: None},
             outputs={'harold.wav': None}
         )
         ff.run()
@@ -175,7 +175,7 @@ def upload(auth_dict=None):
 
         #Convert to mp3
         ff = FFmpeg(
-            inputs={'harold.wav': '-ss 0 -t 30'},
+            inputs={'harold.wav': None},
             outputs={'harold.flac': None}
         )
         ff.run()
