@@ -2,7 +2,7 @@ FROM ubuntu:18.04
 MAINTAINER Computer Science House <rtp@csh.rit.edu>
 
 RUN apt-get update && \
-    apt-get install -y --no-install-recommends apt-utils gcc git libsndfile-dev libldap-dev libsasl2-dev python3-dev python3-pip libpq-dev && \
+    apt-get install -y --no-install-recommends build-essential python3-setuptools apt-utils gcc git libsndfile-dev libldap-dev libsasl2-dev python3-dev python3-pip libpq-dev && \
     apt-get autoremove --yes && \
     apt-get clean all && \
     rm -rf /var/lib/{apt,dpkg,cache,log}/ && \
@@ -17,7 +17,6 @@ RUN mkdir /tmp/librosa_cache & chmod 777 /tmp/librosa_cache & LIBROSA_CACHE_DIR=
 
 RUN pip3 install \
         --upgrade pip \
-        --no-warn-script-location \
         --no-cache-dir \
         -r requirements.txt
 
