@@ -8,15 +8,13 @@ import subprocess
 import json
 import requests
 import flask_migrate
-from ffmpy import FFmpeg
-import librosa
 from flask import Flask, render_template, request, jsonify, redirect
 from flask_pyoidc.provider_configuration import *
 from flask_pyoidc.flask_pyoidc import OIDCAuthentication
 from flask_sqlalchemy import SQLAlchemy
+from rq import Queue
 from werkzeug.utils import secure_filename
 from csh_ldap import CSHLDAP
-from mutagen.flac import FLAC
 from audiophiler.s3 import *
 from audiophiler._version import __version__
 
@@ -50,7 +48,7 @@ db = SQLAlchemy(app)
 migrate = flask_migrate.Migrate(app, db)
 
 # Import db models after instantiating db object
-from audiophiler.models import File, Harold, Auth, Tour
+from audiophiler.models import *
 from audiophiler.util import *
 
 # Create CSHLDAP connection
@@ -63,12 +61,16 @@ from audiophiler.ldap import ldap_is_eboard, ldap_is_rtp
 # Disable SSL certificate verification warning
 requests.packages.urllib3.disable_warnings()
 
+#Setup redis fro queue
+redis_conn = Redis(app.config['REDIS_HOST'], app.config['REDIS_PORT'])
+q = Queue(connection=redis_conn)
+
 @app.route("/")
 @auth.oidc_auth('default')
 @audiophiler_auth
 def home(auth_dict=None):
     # Retrieve list of files for templating
-    db_files = File.query.all()
+    db_files = File.query.join(Meta).all()
     harolds = get_harold_list(auth_dict["uid"])
     tour_harolds = get_harold_list("root")
     is_rtp = ldap_is_rtp(auth_dict["uid"])
@@ -85,7 +87,7 @@ def mine(auth_dict=None):
     is_rtp = ldap_is_rtp(auth_dict["uid"])
     is_eboard = ldap_is_eboard(auth_dict["uid"])
     # Retrieve list of files for templating
-    db_files = File.query.filter_by(author=auth_dict["uid"]).all()
+    db_files = File.query.join(Meta).filter_by(author=auth_dict["uid"]).all()
     harolds = get_harold_list(auth_dict["uid"])
     tour_harolds = get_harold_list("root")
     return render_template("main.html", db_files=db_files,
@@ -102,7 +104,7 @@ def selected(auth_dict=None):
     #Retrieve list of files for templating
     harolds = get_harold_list(auth_dict["uid"])
     tour_harolds = get_harold_list("root")
-    db_files = File.query.filter(File.file_hash.in_(harolds)).all()
+    db_files = File.query.join(Meta).filter(file_id.in_(harolds)).all()
     return render_template("main.html", db_files=db_files,
                 get_date_modified=get_date_modified, s3_bucket=s3_bucket,
                 auth_dict=auth_dict, harolds=harolds, tour_harolds=tour_harolds,
@@ -117,7 +119,7 @@ def admin(auth_dict=None):
     if is_eboard or is_rtp:
         harolds = get_harold_list(auth_dict["uid"])
         tour_harolds = get_harold_list("root")
-        db_files = File.query.filter(File.file_hash.in_(tour_harolds)).all()
+        db_files = File.query.join(Meta).filter(File.file_id.in_(tour_harolds)).all()
         return render_template("main.html", db_files=db_files,
             get_date_modified=get_date_modified, s3_bucket=s3_bucket,
             auth_dict=auth_dict, harolds=harolds, tour_harolds=tour_harolds,
@@ -144,8 +146,8 @@ def upload(auth_dict=None):
 
     for f in uploaded_files:
         # Sanitize file name
-        filename = secure_filename(f.filename)
-
+        filename = secure_filename(f.filename).partition(".")[0]
+        author = auth_dict["uid"]
         # Hash the file contents (read file in ram)
         # File contents cannot be read in chunks (this is a flaw in boto file objects)
         file_hash = hashlib.md5(f.read()).hexdigest()
@@ -158,55 +160,33 @@ def upload(auth_dict=None):
             break
 
         # Add file info to db
-        file_model = File(filename, auth_dict["uid"], file_hash)
+        file_model = File(file_hash, False)
         if file_model is None:
             upload_status["error"].append(filename)
             break
 
-        #Convert file to wav
-        ff = FFmpeg(
-            inputs={filename: None},
-            outputs={'harold.wav': None}
-        )
-        ff.run()
-
-        #Process audio
-        beat_time_string = process_audio('harold.wav')
-
-        #Convert to mp3
-        ff = FFmpeg(
-            inputs={'harold.wav': None},
-            outputs={'harold.flac': None}
-        )
-        ff.run()
-
-        #Add stuff to metadata
-        file = FLAC('harold.flac')
-        file["title"] = filename.partition(".")[0]
-        file["artist"] = auth_dict["uid"]
-        file["beats"] = beat_time_string
-        file.save()
-
         # Upload file to s3
-        upload_file(s3_bucket, file_hash, open('harold.flac', 'r'))
+        upload_file(s3_bucket, file_hash, f)
 
-        #remove local files
-        os.remove('harold.wav')
-        os.remove('harold.flac')
         # Add file_model to DB and flush
         db.session.add(file_model)
         db.session.flush()
         db.session.commit()
         db.session.refresh(file_model)
 
+        #Add the conversion to the queue
+        q.enqueue(process_audio_task, file_id, filename, author)
+
         # Set success status info
+        #THIS IS TO BE CHANGED
         upload_status["success"].append({
-            "name": file_model.name,
+            "name": filename,
             "file_hash": file_model.file_hash
         })
 
     return jsonify(upload_status)
 
+#start converison here
 @app.route("/delete/<string:file_hash>", methods=["POST"])
 @auth.oidc_auth('default')
 @audiophiler_auth
@@ -333,9 +313,11 @@ def toggle_tour_mode(auth_dict=None):
 def logout():
     return redirect("/", 302)
 
+#return a list of file_ids filtered by owner
 def get_harold_list(uid):
     harold_list = Harold.query.filter_by(owner=uid).all()
-    harolds = [harold.file_hash for harold in harold_list]
+    #harolds = [harold.file_hash for harold in harold_list]
+    harolds = [File.query.filter_by(file_id=harold.id).all().file_id for harold in harold_list]
 
     return harolds
 
@@ -345,21 +327,3 @@ def get_random_harold():
     randomized_entry = query.offset(int(row_count*random.random())).first()
 
     return randomized_entry.file_hash
-
-def process_audio(file):
-    x, sr = librosa.load(file)
-    _, beat_times = librosa.beat_track(x, sr=sr, start_bpm=60, units='time')
-    string = ""
-    for t in beat_times:
-        if t > 30:
-            beat_times = beat_times[:beat_times.index(t)]
-            break
-    for i in range(0, len(beat_times)-1, 4):
-        beat_times.insert(i+1, (3*beat_times[i]+beat_times[i+1])/4)
-        beat_times.insert(i+2, (beat_times[i]+beat_times[i+2])/2)
-        beat_times.insert(i+3, (beat_times[i]+3*beat_times[i+3])/4)
-
-    for t in beat_times:
-        string = string+str(t)+","
-
-    return string[:-1]
