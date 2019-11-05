@@ -12,9 +12,9 @@ from flask import Flask, render_template, request, jsonify, redirect
 from flask_pyoidc.provider_configuration import *
 from flask_pyoidc.flask_pyoidc import OIDCAuthentication
 from flask_sqlalchemy import SQLAlchemy
-from rq import Queue
 from werkzeug.utils import secure_filename
 from csh_ldap import CSHLDAP
+from rq import Queue
 from audiophiler.s3 import *
 from audiophiler._version import __version__
 
@@ -160,7 +160,7 @@ def upload(auth_dict=None):
             break
 
         # Add file info to db
-        file_model = File(file_hash, False)
+        file_model = File(file_hash)
         if file_model is None:
             upload_status["error"].append(filename)
             break
@@ -173,6 +173,9 @@ def upload(auth_dict=None):
         db.session.flush()
         db.session.commit()
         db.session.refresh(file_model)
+
+        #Get file_id
+        file_id = File.query.last().file_id
 
         #Add the conversion to the queue
         q.enqueue(process_audio_task, file_id, filename, author)

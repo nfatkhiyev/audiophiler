@@ -17,7 +17,6 @@ class Meta(db.Model):
     beat_times = Column(Text, nullable=False)
 
     def __init__(self, file_id, name, author, beat_times):
-        self.meta_id = meta_id
         self.file_id = file_id
         self.name = name
         self.author = author
@@ -29,19 +28,16 @@ class File(db.Model):
     file_hash = Column(Text, nullable=False)
     converted = Column(Boolean, default=False)
 
-    def __init__(self, name, author, file_hash):
-        self.file_id = file_id
+    def __init__(self, file_hash):
         self.file_hash = file_hash
-        self.converted = converted
 
 class Harold(db.Model):
     __tablename__ = "harolds"
     harold_id = Column(Integer, primary_key=True)
-    file_id = Column(Integer)
+    file_id = Column(Integer, ForeignKey('files.file_id'))
     owner = Column(Text, nullable=False)
 
-    def __init__(self, file_hash, owner):
-        self.harold_id = harold_id
+    def __init__(self, file_id, owner):
         self.file_id = file_id
         self.owner = owner
 
