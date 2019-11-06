@@ -51,6 +51,7 @@ migrate = flask_migrate.Migrate(app, db)
 # Import db models after instantiating db object
 from audiophiler.models import *
 from audiophiler.util import *
+from audiophiler.tasks import process_audio_task
 
 # Create CSHLDAP connection
 ldap = CSHLDAP(app.config["LDAP_BIND_DN"],

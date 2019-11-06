@@ -24,7 +24,7 @@ s3_bucket = get_bucket(app.config["S3_URL"], app.config["S3_KEY"],
 
 def connect_db():
     engine = create_engine(app.config["SQLALCHEMY_DATABASE_URI"])
-    Base.metadata.bind() = engine
+    Base.meta.bind() = engine
     dbsession = sessionmaker(bind=engine)
     db = dbsession()
     return db
