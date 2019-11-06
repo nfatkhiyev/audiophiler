@@ -28,3 +28,7 @@ LDAP_BIND_DN = os.getenv("LDAP_BIND_DN", default="cn=audiophiler,ou=Apps,dc=csh,
 LDAP_BIND_PW = os.getenv("LDAP_BIND_PW", default=None)
 
 PLUG_SUPPORT = os.environ.get('PLUG_ENABLED', False)
+
+REDIS_HOST = os.environ.get('REDIS_HOST', default=None)
+REDIS_PORT = os.environ.get('REDIS_PORT', default=6379)
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD'. default=None)

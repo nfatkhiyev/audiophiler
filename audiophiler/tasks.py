@@ -1,9 +1,12 @@
+import hashlib
 import requests
 from flask import Flask
 from rq import get_current_job
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from models import Meta
+
+from audiophiler.s3 import *
 
 import librosa
 import ffmpy
@@ -15,6 +18,9 @@ if os.path.exists(os.path.join(os.getcwd(), "config.py")):
 else:
     app.config.from_pyfile(os.path.join(os.getcwd(), "config.env.py"))
 
+s3_bucket = get_bucket(app.config["S3_URL"], app.config["S3_KEY"],
+                app.config["S3_SECRET"], app.config["BUCKET_NAME"])
+
 def connect_db():
     engine = create_engine(app.config["SQLALCHEMY_DATABASE_URI"])
     Base.metadata.bind() = engine
@@ -25,9 +31,9 @@ def connect_db():
 def process_audio_task(file_id, file_name, author):
     with app.app_context():
         db = conntect_db()
-        file = requests.get(link, allow_redirects=True)
+        file_request = requests.get(link, allow_redirects=True)
         open('music', 'wb').write(music.content)
-        conver_media('music','music.wav')
+        convert_media('music','music.wav')
         beat_time_string = process_audio('music.wav')
         db = connect_db
         meta_model = Meta(file_id, file_name, author, beat_time_string)
@@ -36,8 +42,17 @@ def process_audio_task(file_id, file_name, author):
         db.session.commit()
         db.session.refresh(meta_model)
 
+        file = open('music.wav', 'r').read()
 
-def conver_media(input, output):
+        query = File.query.filter_by(file_id=file_id).first()
+        
+        old_file_hash = query.file_hash
+        new_file_hash = updated_file_hash(file_id, file)
+        update_bucket(old_file_hash, new_file_hash, file)
+
+        query.converted = True
+
+def convert_media(input, output):
     ff = ffmpy.FFmpeg(
         inputs={input: None},
         outputs={output: None}
@@ -61,3 +76,14 @@ def process_audio(file_name)
         string = string+str(t)+","
 
     return string[:-1]
+
+def update_bucket(old_file_hash, new_file_hash, file):
+    remove_file(s3_bucket, old_file_hash)
+    upload_file(s3_bucket, new_file_hash, file)
+
+def updated_file_hash(file_id, file):
+    entry = File.query.filter_by(file_id=file_id).first()
+    new_file_hash = hashlib.md5(file.read()).hexdigest()
+    entry.file_hash = new_file_hash
+
+    return new_file_hash
