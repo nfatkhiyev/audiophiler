@@ -14,6 +14,7 @@ from flask_pyoidc.flask_pyoidc import OIDCAuthentication
 from flask_sqlalchemy import SQLAlchemy
 from werkzeug.utils import secure_filename
 from csh_ldap import CSHLDAP
+from redis import Redis
 from rq import Queue
 from audiophiler.s3 import *
 from audiophiler._version import __version__

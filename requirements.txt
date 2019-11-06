@@ -13,4 +13,5 @@ pylint
 numba==0.42.0
 ffmpy
 librosa==0.6.0
+redis
 rq

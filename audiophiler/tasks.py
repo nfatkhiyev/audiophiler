@@ -1,6 +1,7 @@
 import hashlib
 import requests
 from flask import Flask
+from redis import Redis
 from rq import get_current_job
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -59,7 +60,7 @@ def convert_media(input, output):
     )
     ff.run()
 
-def process_audio(file_name)
+def process_audio(file_name):
     x, sr = librosa.load(file_name)
     _, beat_times = librosa.beat_track(x, sr=sr, start_bpm=100, units='time')
     string = ""
