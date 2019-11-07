@@ -31,4 +31,4 @@ PLUG_SUPPORT = os.environ.get('PLUG_ENABLED', False)
 
 REDIS_HOST = os.environ.get('REDIS_HOST', default=None)
 REDIS_PORT = os.environ.get('REDIS_PORT', default=6379)
-REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD'. default=None)
+REDIS_PASSWORD = os.environ.get('REDIS_PASSWORD', default=None)
