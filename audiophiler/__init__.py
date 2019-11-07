@@ -106,7 +106,7 @@ def selected(auth_dict=None):
     #Retrieve list of files for templating
     harolds = get_harold_list(auth_dict["uid"])
     tour_harolds = get_harold_list("root")
-    db_files = File.query.join(Meta).filter(file_id.in_(harolds)).all()
+    db_files = File.query.join(Meta).filter(File.file_id.in_(harolds)).all()
     return render_template("main.html", db_files=db_files,
                 get_date_modified=get_date_modified, s3_bucket=s3_bucket,
                 auth_dict=auth_dict, harolds=harolds, tour_harolds=tour_harolds,

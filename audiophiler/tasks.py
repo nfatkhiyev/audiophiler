@@ -2,15 +2,13 @@ import os
 import hashlib
 import requests
 from flask import Flask
-from redis import Redis
 import librosa
 import ffmpy
-from rq import get_current_job
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Meta, File
+from models import Base, Meta, File
 
-from audiophiler.s3 import *
+from audiophiler.s3 import upload_file, remove_file, get_bucket
 
 app = Flask(__name__)
 
@@ -53,10 +51,10 @@ def process_audio_task(link, file_id, file_name, author):
 
         query.converted = True
 
-def convert_media(input, output):
+def convert_media(input_string, output_string):
     ff = ffmpy.FFmpeg(
-        inputs={input: None},
-        outputs={output: None}
+        inputs={input_string: None},
+        outputs={output_string: None}
     )
     ff.run()
 
