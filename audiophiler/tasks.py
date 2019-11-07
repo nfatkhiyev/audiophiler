@@ -34,7 +34,6 @@ def process_audio_task(link, file_id, file_name, author):
         open('music', 'wb').write(music.content)
         convert_media('music','music.wav')
         beat_time_string = process_audio('music.wav')
-        db = connect_db
         meta_model = Meta(file_id, file_name, author, beat_time_string)
         db.session.add(meta_model)
         db.session.flush()
@@ -49,6 +48,7 @@ def process_audio_task(link, file_id, file_name, author):
         new_file_hash = updated_file_hash(file_id, file)
         update_bucket(old_file_hash, new_file_hash, file)
 
+        query.file_hash = new_file_hash
         query.converted = True
 
 def convert_media(input_string, output_string):
