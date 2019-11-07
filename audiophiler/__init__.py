@@ -180,7 +180,7 @@ def upload(auth_dict=None):
         file_id = File.query.last().file_id
 
         #Add the conversion to the queue
-        q.enqueue(process_audio_task, file_id, filename, author)
+        q.enqueue(process_audio_task, redirect(get_file_s3(s3_bucket, file_hash)), file_id, filename, author)
 
         # Set success status info
         #THIS IS TO BE CHANGED

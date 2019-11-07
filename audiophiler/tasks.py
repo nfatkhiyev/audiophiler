@@ -1,16 +1,16 @@
+import os
 import hashlib
 import requests
 from flask import Flask
 from redis import Redis
+import librosa
+import ffmpy
 from rq import get_current_job
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Meta
+from models import Meta, File
 
 from audiophiler.s3 import *
-
-import librosa
-import ffmpy
 
 app = Flask(__name__)
 
@@ -29,10 +29,10 @@ def connect_db():
     db = dbsession()
     return db
 
-def process_audio_task(file_id, file_name, author):
+def process_audio_task(link, file_id, file_name, author):
     with app.app_context():
-        db = conntect_db()
-        file_request = requests.get(link, allow_redirects=True)
+        db = connect_db()
+        music = requests.get(link, allow_redirects=True)
         open('music', 'wb').write(music.content)
         convert_media('music','music.wav')
         beat_time_string = process_audio('music.wav')
@@ -46,7 +46,7 @@ def process_audio_task(file_id, file_name, author):
         file = open('music.wav', 'r').read()
 
         query = File.query.filter_by(file_id=file_id).first()
-        
+
         old_file_hash = query.file_hash
         new_file_hash = updated_file_hash(file_id, file)
         update_bucket(old_file_hash, new_file_hash, file)
