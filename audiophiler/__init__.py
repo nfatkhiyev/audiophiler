@@ -115,7 +115,7 @@ def selected(auth_dict=None):
 @app.route("/tour_page")
 @auth.oidc_auth('default')
 @audiophiler_auth
-def admin(auth_dict=None):
+def tour_page(auth_dict=None):
     is_rtp = ldap_is_rtp(auth_dict["uid"])
     is_eboard = ldap_is_eboard(auth_dict["uid"])
     if is_eboard or is_rtp:
@@ -191,43 +191,47 @@ def upload(auth_dict=None):
 
     return jsonify(upload_status)
 
-#start converison here
-@app.route("/delete/<string:file_hash>", methods=["POST"])
+@app.route("/delete/<string:file_id>", methods=["POST"])
 @auth.oidc_auth('default')
 @audiophiler_auth
-def delete_file(file_hash, auth_dict=None):
+def delete_file(file_id, auth_dict=None):
     # Find file model in db
-    file_model = File.query.filter(File.file_hash == file_hash).first()
+    file_model = File.query.filter(File.file_id == file_id).first()
+    meta_model = Meta.query.filter(Meta.file_id == file_id).first()
 
-    if file_model is None:
+    file_hash = file_model.file_hash
+
+    if file_model or meta_model is None:
         return "File Not Found", 404
 
-    if not auth_dict["uid"] == file_model.author:
+    if not auth_dict["uid"] == meta_model.author:
         if not (ldap_is_eboard(auth_dict["uid"]) or ldap_is_rtp(auth_dict["uid"])):
             return "Permission Denied", 403
 
     # Delete file model
     db.session.delete(file_model)
+    db.session.delete(meta_model)
     db.session.flush()
     db.session.commit()
     # Delete harold model
-    remove_harold(file_hash)
+    remove_harold(file_id)
     # Delete file from s3
     remove_file(s3_bucket, file_hash)
 
     return "OK go for it", 200
 
-@app.route("/get_file_url/<string:file_hash>")
+@app.route("/get_file_url/<string:file_id>")
 @auth.oidc_auth('default')
 @audiophiler_auth
-def get_s3_url(file_hash, auth_dict=None):
+def get_s3_url(file_id, auth_dict=None):
     # Endpoint to return a presigned url to the s3 asset
+    file_hash = File.query.filter_by(file_id=file_id).first().file_hash
     return redirect(get_file_s3(s3_bucket, file_hash))
 
-@app.route("/set_harold/<string:file_hash>", methods=["POST"])
+@app.route("/set_harold/<string:file_id>", methods=["POST"])
 @auth.oidc_auth('default')
 @audiophiler_auth
-def set_harold(file_hash, auth_dict=None):
+def set_harold(file_id, auth_dict=None):
     is_tour = request.json["tour"]
     is_rtp = ldap_is_rtp(auth_dict["uid"])
     is_eboard = ldap_is_eboard(auth_dict["uid"])
@@ -238,17 +242,17 @@ def set_harold(file_hash, auth_dict=None):
             return "Not Authorized", 403
     else:
         uid = auth_dict["uid"]
-    harold_model = Harold(file_hash, uid)
+    harold_model = Harold(file_id, uid)
     db.session.add(harold_model)
     db.session.flush()
     db.session.commit()
     db.session.refresh(harold_model)
     return "OK", 200
 
-@app.route("/delete_harold/<string:file_hash>", methods=["POST"])
+@app.route("/delete_harold/<string:file_id>", methods=["POST"])
 @auth.oidc_auth('default')
 @audiophiler_auth
-def remove_harold(file_hash, auth_dict=None):
+def remove_harold(file_id, auth_dict=None):
     is_tour = request.json["tour"]
     is_rtp = ldap_is_rtp(auth_dict["uid"])
     is_eboard = ldap_is_eboard(auth_dict["uid"])
@@ -260,7 +264,7 @@ def remove_harold(file_hash, auth_dict=None):
     else:
         uid = auth_dict["uid"]
     harold_model = Harold.query.filter(
-        Harold.file_hash == file_hash,
+        Harold.file_id == file_id,
         Harold.owner == uid
         ).all()
     if harold_model is None:
@@ -281,15 +285,16 @@ def get_harold(uid, auth_dict=None):
         auth_models = Auth.query.all()
         for auth_obj in auth_models:
             if auth_obj.auth_key == data_dict["auth_key"]:
-                harold_file_hash = None
+                harold_file_id = None
                 if not get_tour_lock_status():
                     harolds_list = get_harold_list(uid)
                     if len(harolds_list) == 0:
-                        harold_file_hash = get_random_harold()
+                        harold_file_id = get_random_harold()
                     else:
-                        harold_file_hash = random.choice(harolds_list)
+                        harold_file_id = random.choice(harolds_list)
                 else:
-                    harold_file_hash = random.choice(get_harold_list('root'))
+                    harold_file_id = random.choice(get_harold_list('root'))
+                harold_file_hash = File.query.filter_by(file_id=harold_file_id).first().file_hash
                 return get_file_s3(s3_bucket, harold_file_hash)
 
     return "Permission denied", 403
@@ -322,7 +327,7 @@ def logout():
 def get_harold_list(uid):
     harold_list = Harold.query.filter_by(owner=uid).all()
     #harolds = [harold.file_hash for harold in harold_list]
-    harolds = [File.query.filter_by(file_id=harold.id).all().file_id for harold in harold_list]
+    harolds = [File.query.filter_by(file_id=harold.file_id).all().file_id for harold in harold_list]
 
     return harolds
 
@@ -331,4 +336,4 @@ def get_random_harold():
     row_count = int(query.count())
     randomized_entry = query.offset(int(row_count*random.random())).first()
 
-    return randomized_entry.file_hash
+    return randomized_entry.file_id
