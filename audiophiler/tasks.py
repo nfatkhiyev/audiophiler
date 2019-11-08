@@ -6,7 +6,7 @@ import librosa
 import ffmpy
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Base, Meta, File
+from audiophiler.models import Base, Meta, File
 
 from audiophiler.s3 import upload_file, remove_file, get_bucket
 
