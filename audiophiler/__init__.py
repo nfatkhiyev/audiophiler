@@ -327,7 +327,7 @@ def logout():
 def get_harold_list(uid):
     harold_list = Harold.query.filter_by(owner=uid).all()
     #harolds = [harold.file_hash for harold in harold_list]
-    harolds = harold.file_id for harold in harold_list]
+    harolds = [harold.file_id for harold in harold_list]
 
     return harolds
 
