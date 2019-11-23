@@ -16,7 +16,7 @@ class File(db.Model):
 
     def __init__(self, file_hash):
         self.file_hash = file_hash
-        
+
 class Meta(db.Model):
     __tablename__="meta"
     meta_id = Column(Integer, primary_key=True)
