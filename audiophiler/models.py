@@ -8,6 +8,15 @@ from audiophiler import db
 
 Base = declarative_base()
 
+class File(db.Model):
+    __tablename__ = "files"
+    file_id = Column(Integer, primary_key=True)
+    file_hash = Column(Text, nullable=False)
+    converted = Column(Boolean, default=False)
+
+    def __init__(self, file_hash):
+        self.file_hash = file_hash
+        
 class Meta(db.Model):
     __tablename__="meta"
     meta_id = Column(Integer, primary_key=True)
@@ -21,15 +30,6 @@ class Meta(db.Model):
         self.name = name
         self.author = author
         self.beat_times = beat_times
-
-class File(db.Model):
-    __tablename__ = "files"
-    file_id = Column(Integer, primary_key=True)
-    file_hash = Column(Text, nullable=False)
-    converted = Column(Boolean, default=False)
-
-    def __init__(self, file_hash):
-        self.file_hash = file_hash
 
 class Harold(db.Model):
     __tablename__ = "harolds"
