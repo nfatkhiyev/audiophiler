@@ -177,7 +177,7 @@ def upload(auth_dict=None):
         db.session.refresh(file_model)
 
         #Get file_id
-        file_id = File.query.last().file_id
+        file_id = File.query.order_by(file_id.desc()).first().file_id
 
         #Add the conversion to the queue
         q.enqueue(process_audio_task, redirect(get_file_s3(s3_bucket, file_hash)), file_id, filename, author)
