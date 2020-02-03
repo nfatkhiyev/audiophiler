@@ -64,7 +64,7 @@ from audiophiler.ldap import ldap_is_eboard, ldap_is_rtp
 requests.packages.urllib3.disable_warnings()
 
 #Setup redis fro queue
-redis_conn = Redis(app.config['REDIS_HOST'], app.config['REDIS_PORT'])
+redis_conn = Redis(app.config['REDIS_HOST'], app.config['REDIS_PORT'], password=app.config['REDIS_PASSWORD'])
 q = Queue(connection=redis_conn)
 
 @app.route("/")
