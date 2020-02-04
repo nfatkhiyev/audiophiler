@@ -32,7 +32,10 @@ def process_audio_task(link, file_id, file_name, author):
         db = connect_db()
         music = requests.get(link, allow_redirects=True)
         open('music', 'wb').write(music.content)
-        convert_media('music','music.wav')
+        try:
+            convert_media('music','music.wav')
+        except:
+
         beat_time_string = process_audio('music.wav')
         meta_model = Meta(file_id, file_name, author, beat_time_string)
         db.session.add(meta_model)
@@ -50,6 +53,9 @@ def process_audio_task(link, file_id, file_name, author):
 
         query.file_hash = new_file_hash
         query.converted = True
+
+        os.remove("music")
+        os.remove("music.wav")
 
 def convert_media(input_string, output_string):
     ff = ffmpy.FFmpeg(
