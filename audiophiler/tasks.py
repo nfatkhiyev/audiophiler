@@ -35,6 +35,7 @@ def process_audio_task(link, file_id, file_name, author):
         try:
             convert_media('music','music.wav')
         except:
+            print('fuck')
 
         beat_time_string = process_audio('music.wav')
         meta_model = Meta(file_id, file_name, author, beat_time_string)
