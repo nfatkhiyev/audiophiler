@@ -60,7 +60,7 @@ def convert_media(input_string, output_string):
 
 def process_audio(file_name):
     x, sr = librosa.load(file_name)
-    _, beat_times = librosa.beat_track(x, sr=sr, start_bpm=100, units='time')
+    _, beat_times = librosa.beat.beat_track(x, sr=sr, start_bpm=100, units='time')
     string = ""
     for t in beat_times:
         if t > 30:
