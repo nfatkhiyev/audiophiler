@@ -157,7 +157,7 @@ def upload(auth_dict=None):
         f.seek(0)
 
         # Check if file hash is the same as any files already in the db
-        if File.query.filter_by(file_hash=file_hash).first():
+        if File.query.filter_by(file_hash=file_hash).first() and File.query.filter_by(file_hash=file_hash).first().converted:
             upload_status["error"].append(filename)
             break
 
