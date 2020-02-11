@@ -73,6 +73,7 @@ def process_audio(file_name):
     for t in beat_times:
         if t > 30:
             beat_times = beat_times[:numpy.where(beat_times == t)[0][0]]
+            beat_times.tolist()
             break
     for i in range(0, len(beat_times)-1, 4):
         beat_times.insert(i+1, (3*beat_times[i]+beat_times[i+1])/4)
